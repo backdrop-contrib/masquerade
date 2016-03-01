@@ -13,7 +13,7 @@ Installation
 
 To install the Masquerade module, extract the module to your modules folder,
 such as sites/all/modules. After enabling the module, it can be configured
-under Administer > Configuration > People > Masquerade. To enable users to
+under Configuration > User accounts > Masquerade. To enable users to
 masquerade, assign the appropriate "masquerade module" permissions to the roles
 available on your site. For example:
 
@@ -48,13 +48,13 @@ complete text.
 Current Maintainers
 ----------------------------
 
-- BSCOOL (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
+- BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
 
 
 Credits
 ----------------------------
 
-- Ported to Backdrop CMS by BSCOOL (https://github.com/JugglingCoder, http://www.thedreamchest.com/)
+- Ported to Backdrop CMS by BSCOOL (JugglingCoder) (https://github.com/JugglingCoder, http://www.thedreamchest.com/)
 
 This module was developed for Drupal by a number of contributors. For more information
 about this module, see:
