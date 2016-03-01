@@ -36,7 +36,7 @@ By default, when a user is selected for the 'Menu Quick Switch user', the Masque
 
  * Switch back: This menu item appears while masquerading so that you can switch back to your original user.
 
-Also see the "example_usage_bscool_0001.php" in this folder. 
+Also see the "example_usage_bscool_0001.php" in masquerade folder. 
  
 License
 ----------------------------
