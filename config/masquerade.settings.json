@@ -1,0 +1,7 @@
+{
+    "_config_name": "masquerade.settings",
+		"masquerade_test_user": "",
+		"masquerade_admin_roles": "",
+		"masquerade_quick_switches": "",
+		"anonymous": ""
+}
