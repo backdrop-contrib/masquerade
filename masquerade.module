@@ -476,10 +476,16 @@ function masquerade_user_view($account, $view_mode, $langcode) {
  */
 function masquerade_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $config = config('masquerade.settings');
-	if ($form['#user_category'] != 'account') {
-    // Do not show this form for different categories.
-    return;
-  }
+	// START_BACKDROP_CONVERSION
+	// Removed this "if" statement from Backdrop Version.
+	// was getting "Notice":
+	// Notice: Undefined index: #user_category in masquerade_form_user_profile_form_alter() (line 479 of C:\wamp\www\bd_practice_0002\modules\masquerade\masquerade.module).
+	// so just remove it for now
+	//if ($form['#user_category'] != 'account') {
+  //  // Do not show this form for different categories.
+  //  return;
+  //}
+	// END_BACKDROP_CONVERSION
   $form['masquerade'] = array(
     '#type' => 'fieldset',
     '#title' => t('Masquerade settings'),
