@@ -75,100 +75,38 @@ function masquerade_install() {
 }
 
 /**
- * Reformat variable value.
+ * Implements hook_update_last_removed().
  */
-function masquerade_update_6001() {
-  variable_set('masquerade_quick_switches', implode(',', variable_get('masquerade_quick_switches', array())));
+function masquerade_update_last_removed() {
+  return 7001;
 }
 
 /**
- * Make the sid column match the length of the core sessions table (64 characters).
+ * @defgroup updates-7.x-to-1.x Updates from 7.x to 1.x
+ * @{
+ * Update functions from Drupal 7.x to Backdrop CMS 1.x.
  */
-function masquerade_update_6002() {
-  db_drop_index('masquerade', 'sid');
-  db_drop_index('masquerade', 'sid_2');
-  db_change_field('masquerade', 'sid', 'sid', array(
-    'type' => 'varchar',
-    'length' => '64',
-    'not null' => TRUE,
-    'default' => '')
-  );
-  db_add_index('masquerade', 'sid', array('sid', 'uid_from'));
-  db_add_index('masquerade', 'sid_2', array('sid', 'uid_as'));
-}
 
 /**
- * Change masquerade_quick_switches variable to store a serialized array of
- * user ID's. Reverts update 6001.
+ * Move masquerade settings from variables to config.
  */
-function masquerade_update_6003() {
-  $users = variable_get('masquerade_quick_switches', NULL);
-  if (!empty($users)) {
-    $user_ids = backdrop_explode_tags($users);
-    if (!empty($user_ids)) {
-      variable_set('masquerade_quick_switches', $user_ids);
-    }
-  }
-  else {
-    variable_del('masquerade_quick_switches');
-  }
+
+function masquerade_update_1000() {
+
+  // Migrate variables to config.
+  $config = config('masquerade.settings');
+  $config->set('test_user', update_variable_get('masquerade_test_user', ''));
+  $config->set('admin_roles', update_variable_get('masquerade_admin_roles', array()));
+  $config->set('quick_switches', update_variable_get('masquerade_quick_switches', array()));
+  $config->save();
+
+  // Delete variables.
+  update_variable_del('masquerade_test_user');
+  update_variable_del('masquerade_admin_roles');
+  update_variable_del('masquerade_quick_switches');
 }
 
-/**
- * Set the weight of the masquerade module to -10, but only if it hasn't
- * previously been changed.
+/*
+ * @} End of "defgroup updates-7.x-to-1.x"
+ * The next series of updates should start at 2000.
  */
-function masquerade_update_6004() {
-  db_update('system')
-    ->fields(array('weight' => -10))
-    ->condition('name', 'masquerade')
-    ->execute();
-}
-
-/**
- * Add a table storing specific user pairings a user can masquerade as.
- */
-function masquerade_update_6005() {
-  $schema = array(
-    'masquerade_users' => array(
-      'fields' => array(
-        'uid_from' => array(
-          'type' => 'int',
-          'not null' => TRUE,
-          'default' => 0,
-          'disp-width' => 10,
-        ),
-        'uid_to' => array(
-          'type' => 'int',
-          'not null' => TRUE,
-          'default' => 0,
-          'disp-width' => 10,
-        ),
-      ),
-      'primary key' => array('uid_from', 'uid_to'),
-    )
-  );
-  db_create_table('masquerade_users', $schema['masquerade_users']);
-}
-
-/**
- * Update masquerade block delta.
- */
-function masquerade_update_7000() {
-  db_update('block')
-    ->fields(array('delta' => 'masquerade'))
-    ->condition('module', 'masquerade')
-    ->condition('delta', 0)
-    ->execute();
-}
-
-/**
- * Update masquerade block caching.
- */
-function masquerade_update_7001() {
-  db_update('block')
-    ->fields(array('cache' => BACKDROP_NO_CACHE))
-    ->condition('module', 'masquerade')
-    ->condition('delta', 'masquerade')
-    ->execute();
-}

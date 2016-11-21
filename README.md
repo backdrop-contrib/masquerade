@@ -49,6 +49,7 @@ Current Maintainers
 ----------------------------
 
 - BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
+- Herb v/d Dool (https://github.com/herbdool).
 
 
 Credits
