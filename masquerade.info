@@ -1,11 +1,11 @@
 name = Masquerade
 description = "This module allows permitted users to masquerade as other users."
 backdrop = 1.x
-files[] = masquerade.test
+type = module
+
 configure = admin/config/people/masquerade
 
 package = "User Management"
 
-version = "1.x-1.0.1"
 backdrop = 1.x
 project = "Masquerade"
