@@ -440,8 +440,8 @@ function masquerade_field_extra_fields() {
  */
 function masquerade_user_view($account, $view_mode, $langcode) {
   $config = config('masquerade.settings');
-  // check if user qualifies as admin
-  $roles = array_keys(array_filter($config->get('admin_roles')));
+  // Check if user qualifies as admin.
+  $roles = !empty($config->get('admin_roles')) ? array_filter($config->get('admin_roles')) : array();
   $perm = $account->uid == 1 || array_intersect(array_keys((array)$account->roles), $roles) ?
     'masquerade as admin' :
     'masquerade as user';
