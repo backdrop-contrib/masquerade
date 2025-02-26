@@ -431,7 +431,7 @@ function masquerade_user_view($account, $view_mode, $langcode) {
   $config = config('masquerade.settings');
   // Check if user qualifies as admin.
   $roles = !empty($config->get('admin_roles')) ? array_filter($config->get('admin_roles')) : array();
-  $perm = $account->uid == 1 || array_intersect(array_keys((array)$account->roles), $roles) ?
+  $perm = $account->uid == 1 || array_intersect((array)$account->roles, $roles) ?
     'masquerade as admin' :
     'masquerade as user';
 
@@ -865,7 +865,7 @@ function masquerade_switch_user($uid) {
   $new_user = user_load($uid);
 
   $roles = array_keys(array_filter($config->get('admin_roles')));
-  $perm = $uid == 1 || array_intersect(array_keys($new_user->roles), $roles) ?
+  $perm = $uid == 1 || array_intersect($new_user->roles, $roles) ?
     'masquerade as admin' :
     'masquerade as user';
 
