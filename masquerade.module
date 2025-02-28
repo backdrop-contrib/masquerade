@@ -46,47 +46,6 @@ function masquerade_permission() {
 }
 
 /**
- * Implements hook_init().
- */
-function masquerade_init() {
-  global $user;
-
-  // Try to load masqing uid from masquerade table.
-  $uid = db_query("SELECT uid_from FROM {masquerade} WHERE sid = :sid AND uid_as = :uid_as", array(
-    ':sid' => session_id(),
-    ':uid_as' => $user->uid,
-  ))->fetchField();
-
-  // We are using identical operator (===) instead of equal (==) because if
-  // $uid === 0 we want to store the session variable. If there's no record in
-  // masquerade table we clear the session variable.
-  if ($uid === FALSE) {
-    if (isset($_SESSION)) {
-      unset($_SESSION['masquerading']);
-    }
-  }
-  else {
-    $_SESSION['masquerading'] = $uid;
-  }
-}
-
-/**
- * Implements hook_cron().
- *
- * Cleanup masquerade records where people didn't use the switch back link
- * that would have cleanly removed the user switch record.
- */
-function masquerade_cron() {
-  // see http://backdrop.org/node/268487 before modifying this query
-  $subquery = db_select('sessions', 's');
-  $subquery->addField('s', 'sid');
-
-  $query = db_delete('masquerade');
-  $query->condition('sid', $subquery, 'NOT IN');
-  $query->execute();
-}
-
-/**
  * Implements hook_menu().
  */
 function masquerade_menu() {
@@ -94,7 +53,7 @@ function masquerade_menu() {
   $config = config('masquerade.settings');
 
   $default_test_user = _masquerade_user_load($config->get('test_user'));
-  if ($default_test_user && ($default_test_user->uid || $default_test_user->name == t(config_get('system.core', 'anonymous')))) {
+  if ($default_test_user && $default_test_user->uid) {
     $items['masquerade/switch/' . $default_test_user->uid] = array(
       'title' => 'Masquerade as @testuser',
       'title arguments' => array('@testuser' => $default_test_user->name),
@@ -225,7 +184,6 @@ function masquerade_user_operations_masquerade(array $accounts) {
  * @return
  *   TRUE, if the user can perform the requested action, FALSE otherwise.
  */
-
 function masquerade_menu_access($type, $uid = NULL) {
   switch ($type) {
     case 'unswitch':
@@ -247,7 +205,7 @@ function masquerade_menu_access($type, $uid = NULL) {
         if ($account = user_load($uid)) {
           $switch_to_account = db_query("SELECT 1 FROM {masquerade_users} WHERE uid_from = :uid_from AND uid_to = :uid_to", array(
             ':uid_from' => $user->uid,
-            ':uid_to' => $account->uid
+            ':uid_to' => $account->uid,
           ))->fetchField();
         }
       }
@@ -261,8 +219,8 @@ function masquerade_menu_access($type, $uid = NULL) {
  */
 function masquerade_admin_settings() {
   $config = config('masquerade.settings');
-  // create a list of roles; all selected roles are considered administrative.
-  $roles = user_roles();
+  // Create a list of roles; all selected roles are considered administrative.
+  $roles = user_roles(TRUE);
   $form['masquerade_admin_roles'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Roles that are considered "administrators" for masquerading'),
@@ -286,9 +244,6 @@ function masquerade_admin_settings() {
 
   $quick_switch_users = array();
   foreach ($quick_switch as $uid => $account) {
-    if ($uid == 0) {
-      $account->name = t(config_get('system.core', 'anonymous'));
-    }
     $quick_switch_users[] = $account->name;
   }
 
@@ -303,7 +258,7 @@ function masquerade_admin_settings() {
 
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save Configuration')
+    '#value' => t('Save Configuration'),
   );
 
   $form['#validate'][] = 'masquerade_admin_settings_validate';
@@ -312,6 +267,9 @@ function masquerade_admin_settings() {
   return $form;
 }
 
+/**
+ *
+ */
 function masquerade_admin_settings_validate($form, &$form_state) {
   $config = config('masquerade.settings');
   if (!empty($form_state['values']['masquerade_test_user'])) {
@@ -339,6 +297,9 @@ function masquerade_admin_settings_validate($form, &$form_state) {
   $form_state['values']['masquerade_quick_switches'] = $masquerade_uids;
 }
 
+/**
+ *
+ */
 function masquerade_admin_settings_submit($form, &$form_state) {
   $config = config('masquerade.settings');
 
@@ -359,11 +320,10 @@ function masquerade_admin_settings_submit($form, &$form_state) {
 }
 
 /**
- * Wrapper around user_load() to allow the loading of anonymous users.
+ * Wrapper around user_load().
  *
  * @param $username
- *   The username of the user you wish to load (i.e. $user->name). To load the
- *   anonymous user, pass the value of the 'anonymous' variable.
+ *   The username of the user you wish to load (i.e. $user->name).
  *
  * @return
  *   A fully-loaded $user object upon successful user load or FALSE if user
@@ -373,31 +333,9 @@ function _masquerade_user_load($username) {
   $config = config('masquerade.settings');
   $account = FALSE;
   if (!empty($username)) {
-    $anon = t(config_get('system.core', 'anonymous'));
-    $account = user_load_by_name(($username == $anon ? '' : $username));
-    if (isset($account->uid) && empty($account->uid)) {
-      // Anonymous user should have a name.
-      $account->name = $anon;
-    }
+    $account = user_load_by_name($username);
   }
   return $account;
-}
-
-/**
- * Implements hook_user_logout().
- */
-function masquerade_user_logout($account) {
-  if (!empty($account->masquerading)) {
-    global $user;
-    cache_clear_all($user->uid, 'cache_menu', TRUE);
-    $real_user = user_load($user->masquerading);
-    watchdog('masquerade', "User %user no longer masquerading as %masq_as.", array('%user' => $real_user->name, '%masq_as' => $user->name), WATCHDOG_INFO);
-
-    $query = db_delete('masquerade');
-    $query->condition('sid', session_id());
-    $query->condition('uid_as', $account->uid);
-    $query->execute();
-  }
 }
 
 /**
@@ -431,9 +369,7 @@ function masquerade_user_view($account, $view_mode, $langcode) {
   $config = config('masquerade.settings');
   // Check if user qualifies as admin.
   $roles = !empty($config->get('admin_roles')) ? array_filter($config->get('admin_roles')) : array();
-  $perm = $account->uid == 1 || array_intersect((array)$account->roles, $roles) ?
-    'masquerade as admin' :
-    'masquerade as user';
+  $perm = $account->uid == 1 || array_intersect((array) $account->roles, $roles) ? 'masquerade as admin' : 'masquerade as user';
 
   global $user;
 
@@ -474,12 +410,7 @@ function masquerade_form_user_profile_form_alter(&$form, &$form_state, $form_id)
   $users = user_load_multiple($uids);
   $masquerade_users = array();
   foreach ($users as $uid => $account) {
-    if ($uid == 0) {
-      $masquerade_users[] = t(config_get('system.core', 'anonymous'));
-    }
-    else {
-      $masquerade_users[] = $account->name;
-    }
+    $masquerade_users[] = $account->name;
   }
   $form['masquerade']['masquerade_users'] = array(
     '#type' => 'textfield',
@@ -490,7 +421,6 @@ function masquerade_form_user_profile_form_alter(&$form, &$form_state, $form_id)
     '#maxlength' => NULL,
   );
   $form['#validate'][] = 'masquerade_user_validate';
-  $form['#submit'][] = 'masquerade_user_submit';
 }
 
 /**
@@ -508,20 +438,10 @@ function masquerade_user_validate(&$form, $form_state) {
 }
 
 /**
- * Submit handler for masquerade users form element.
- */
-function masquerade_user_submit(&$form, $form_state) {
-  global $_masquerade_old_session_id;
-  $_masquerade_old_session_id = session_id();
-}
-
-/**
  * Implements hook_user_update().
  *
  */
 function masquerade_user_update($account) {
-
-  global $_masquerade_old_session_id;
   if (isset($account->masquerade_users)) {
     $query = db_delete('masquerade_users');
     $query->condition('uid_from', $account->uid);
@@ -539,17 +459,6 @@ function masquerade_user_update($account) {
     }
     $query->execute();
     $account->masquerade_users = NULL;
-
-    // Update user session...
-    // @TODO check other way of session API.
-    if (!empty($_masquerade_old_session_id)) {
-      $query = db_update('masquerade');
-      $query->fields(array(
-        'sid' => session_id(),
-      ));
-      $query->condition('sid', $_masquerade_old_session_id);
-      $query->execute();
-    }
   }
 }
 
@@ -614,12 +523,7 @@ function masquerade_block_1() {
   $markup_value = '';
   if (isset($_SESSION['masquerading'])) {
     $quick_switch_links[] = l(t('Switch back'), 'masquerade/unswitch', array('query' => array('token' => backdrop_get_token('masquerade/unswitch'))));
-    if ($user->uid > 0) {
-      $markup_value = t('You are masquerading as <a href="@user-url">%masq_as</a>.', array('@user-url' => url('user/' . $user->uid), '%masq_as' => $user->name));
-    }
-    else {
-      $markup_value = t('You are masquerading as %anonymous.', array('%anonymous' => t(config_get('system.core', 'anonymous'))));
-    }
+    $markup_value = t('You are masquerading as <a href="@user-url">%masq_as</a>.', array('@user-url' => url('user/' . $user->uid), '%masq_as' => $user->name));
   }
   else {
     $quick_switches = $config->get('quick_switches');
@@ -634,14 +538,8 @@ function masquerade_block_1() {
         $account = user_load($switch_user);
         if (isset($account->uid)) {
           $switch_link = 'masquerade/switch/' . $account->uid;
-          $perm = $user->uid == 1 || array_intersect((array) $account->roles, $admin_roles) ?
-            'masquerade as admin' :
-            'masquerade as user';
+          $perm = $user->uid == 1 || array_intersect((array) $account->roles, $admin_roles) ? 'masquerade as admin' : 'masquerade as user';
           if ($account->uid && user_access($perm)) {
-            $quick_switch_links[] = l($account->name, $switch_link, array('query' => array('token' => backdrop_get_token($switch_link))));
-          }
-          if ($switch_user == 0) {
-            $account->name = t(config_get('system.core', 'anonymous'));
             $quick_switch_links[] = l($account->name, $switch_link, array('query' => array('token' => backdrop_get_token($switch_link))));
           }
         }
@@ -683,7 +581,7 @@ function masquerade_block_1() {
 function masquerade_block_1_validate($form, &$form_state) {
   $config = config('masquerade.settings');
   global $user;
-  //unset($form);
+  // unset($form);
   $name = $form_state['values']['masquerade_user_field'];
   $allowed = FALSE;
   $to_uid = db_select('users', 'u')
@@ -707,9 +605,9 @@ function masquerade_block_1_validate($form, &$form_state) {
     form_set_error('masquerade_user_field', t('You are not allowed to masquerade as the selected user.'));
   }
 
-  if ($name != t(config_get('system.core', 'anonymous')) && module_exists('alt_login')) {
+  if (module_exists('alt_login')) {
     $alt_login = db_query("SELECT u.name FROM {users} u INNER JOIN {alt_login} al ON u.uid = al.uid WHERE al.alt_login = :alt_login", array(
-      ':alt_login' => $name
+      ':alt_login' => $name,
     ))->fetchObject();
     if (isset($alt_login->name)) {
       $name = $alt_login->name;
@@ -734,7 +632,7 @@ function masquerade_block_1_validate($form, &$form_state) {
  * Masquerade block form submission.
  */
 function masquerade_block_1_submit($form, &$form_state) {
-  //unset($form);
+  // unset($form);
   $masq_user = _masquerade_user_load($form_state['values']['masquerade_user_field']);
   if (!masquerade_switch_user($masq_user->uid)) {
     backdrop_access_denied();
@@ -755,20 +653,12 @@ function masquerade_autocomplete($string) {
   global $user;
 
   $matches = array();
-  // Anonymous user goes first to be visible for user.
-  $anonymous = t(config_get('system.core', 'anonymous'));
-  if (stripos($anonymous, $string) === 0) {
-    $matches[$anonymous] = $anonymous;
-  }
-  // Other suggestions.
   $result = db_query_range("SELECT uid, name FROM {users} WHERE LOWER(name) LIKE LOWER(:string)", 0, 10, array(
     ':string' => $string . '%',
   ));
   foreach ($result as $switch_user) {
     $account = user_load($switch_user->uid);
-    $perm = $user->uid == 1 || array_intersect((array) $account->roles, $admin_roles) ?
-      'masquerade as admin' :
-      'masquerade as user';
+    $perm = $user->uid == 1 || array_intersect((array) $account->roles, $admin_roles) ? 'masquerade as admin' : 'masquerade as user';
     if (user_access($perm)) {
       $matches[$account->name] = check_plain($account->name);
     }
@@ -786,10 +676,8 @@ function masquerade_autocomplete($string) {
  *
  * @param $string
  *   The string of autocmplete value submitted by the user.
- * @param $add_anonymous
- *   Flag to include Anonymous user into result.
  */
-function masquerade_autocomplete_multiple($string, $add_anonymous = TRUE) {
+function masquerade_autocomplete_multiple($string) {
   $config = config('masquerade.settings');
   $matches = array();
   // The user enters a comma-separated list of users. We only autocomplete the last user.
@@ -798,14 +686,6 @@ function masquerade_autocomplete_multiple($string, $add_anonymous = TRUE) {
   $last_string = backdrop_strtolower(array_pop($users_typed));
   if ($last_string) {
     $prefix = count($users_typed) ? implode(', ', $users_typed) . ', ' : '';
-    if ($add_anonymous) {
-      // Anonymous user goes first to be visible for user.
-      $anonymous = t(config_get('system.core', 'anonymous'));
-      if (stripos($anonymous, $last_string) === 0) {
-        $matches[$prefix . $anonymous] = $anonymous;
-      }
-    }
-    // Other suggestions.
     $result = db_query_range("SELECT name FROM {users} WHERE LOWER(name) LIKE :string", 0, 10, array(
       ':string' => $last_string . '%',
     ));
@@ -865,9 +745,7 @@ function masquerade_switch_user($uid) {
   $new_user = user_load($uid);
 
   $roles = array_keys(array_filter($config->get('admin_roles')));
-  $perm = $uid == 1 || array_intersect($new_user->roles, $roles) ?
-    'masquerade as admin' :
-    'masquerade as user';
+  $perm = $uid == 1 || array_intersect($new_user->roles, $roles) ? 'masquerade as admin' : 'masquerade as user';
 
   // Check to see if we need admin permission.
   $results = db_query_range('SELECT 1 FROM {masquerade_users} WHERE uid_from = :uid_from AND uid_to = :uid_to', 0, 1, array(
@@ -889,22 +767,10 @@ function masquerade_switch_user($uid) {
     return FALSE;
   }
 
-  // Call logout hooks when switching from original user.
-  module_invoke_all('user_logout', $user);
   backdrop_session_regenerate();
 
-  $query = db_insert('masquerade');
-  $query->fields(array(
-    'uid_from' => $user->uid,
-    'uid_as' => $new_user->uid,
-    'sid' => session_id(),
-  ));
-  $query->execute();
-  // switch user
-
-  watchdog('masquerade', 'User %user now masquerading as %masq_as.', array('%user' => $user->name, '%masq_as' => $new_user->name ? $new_user->name : t(config_get('system.core', 'anonymous'))), WATCHDOG_INFO);
   backdrop_set_message(t('You are now masquerading as !masq_as.', array('!masq_as' => theme('username', array('account' => $new_user)))));
-  $user->masquerading = $new_user->uid;
+  $_SESSION['masquerading'] = $user->uid;
   $user = $new_user;
 
   // Call all login hooks when switching to masquerading user.
@@ -935,23 +801,13 @@ function masquerade_switch_back_page() {
  */
 function masquerade_switch_back() {
   $config = config('masquerade.settings');
-  // switch user
+  // Switch user.
   global $user;
-  cache_clear_all($user->uid, 'cache_menu', TRUE);
-  $uid = db_query("SELECT m.uid_from FROM {masquerade} m WHERE m.sid = :sid AND m.uid_as = :uid_as ", array(
-    ':sid' => session_id(),
-    ':uid_as' => $user->uid,
-  ))->fetchField();
-  // erase record
-  db_delete('masquerade')
-    ->condition('sid', session_id())
-    ->condition('uid_as', $user->uid)
-    ->execute();
+  $oldname = $user->name;
 
-  $oldname = ($user->uid == 0 ? t(config_get('system.core', 'anonymous')) : $user->name);
-
-  // Call logout hooks when switching from masquerading user.
-  module_invoke_all('user_logout', $user);
+  // Clear the session.
+  $uid = $_SESSION['masquerading'];
+  unset($_SESSION['masquerading']);
   backdrop_session_regenerate();
 
   $user = user_load($uid);
