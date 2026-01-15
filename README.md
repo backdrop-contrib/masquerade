@@ -10,8 +10,8 @@ switch back to the previous account.
 
 It adds a link on a user\'s profile page that allows permitted users to
 masquerade as that user. Upon masquerading, a link to "switch back" to the
-original user will appear in the menu. While masquerading, the option to 
-masquerade as another user will not appear. All masquerading transactions 
+original user will appear in the menu. While masquerading, the option to
+masquerade as another user will not appear. All masquerading transactions
 are logged, and `$user->masquerading` will be set; this could be displayed
 via theme.
 
@@ -24,7 +24,7 @@ Installation
 ----------------------------
 
 To install the Masquerade module, extract the module to your modules folder.
-After enabling the module, it can be configured under 
+After enabling the module, it can be configured under
 Configuration > User accounts > Masquerade. To enable users to
 masquerade, assign the appropriate "masquerade module" permissions to the roles
 available on your site. For example:
@@ -39,7 +39,7 @@ available on your site. For example:
   in the Masquerade configuration, set 'administrator' as an
   administrator role.
 
-	 
+
 Usage / Quick Switch Menu
 ----------------------------
 
@@ -47,7 +47,7 @@ By default, when a user is selected for the 'Menu Quick Switch user', the Masque
 
  * Masquerade as 'the user selected': When clicked, the user can quick switch to the user selected.
  * Switch back: This menu item appears while masquerading so that you can switch back to your original user.
- 
+
 License
 ----------------------------
 
@@ -60,6 +60,7 @@ Current Maintainers
 
 - BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
 - Herb v/d Dool (https://github.com/herbdool).
+- Laryn Kragt Bakker (https://github.com/laryn).
 
 
 Credits
