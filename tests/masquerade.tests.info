@@ -1,0 +1,5 @@
+[MasqueradeTestCase]
+name = Masquerade Test
+description = Test the form permissions and switch ability of the Masquerade module.
+group = Masquerade
+file = masquerade.test
