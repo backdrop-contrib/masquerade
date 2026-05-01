@@ -8,14 +8,6 @@
  */
 
 class MasqueradeTestCase extends BackdropWebTestCase {
-  public static function getInfo() {
-    return array(
-      'name' => 'Masquerade tests',
-      'description' => 'Tests user switching with the Masquerade module.',
-      'group' => 'Masquerade',
-    );
-  }
-
   public function setUp() {
     parent::setUp('masquerade');
   }
@@ -24,6 +16,8 @@ class MasqueradeTestCase extends BackdropWebTestCase {
     $admin_perms = array(
       'administer site configuration',
       'administer permissions',
+      'access administration pages',
+      'administer layouts',
       'administer blocks',
       'administer masquerade',
       'administer users',
@@ -40,15 +34,15 @@ class MasqueradeTestCase extends BackdropWebTestCase {
     $this->backdropGet('admin/config/people/masquerade');
     $this->assertText(t('Roles that are considered "administrators" for masquerading'));
 
-    // Test enabling the Masquerade block
-    $this->backdropGet('admin/structure/block/manage/masquerade/masquerade/configure');
-    $this->assertText(t("'@module' block", array('@module' => 'Masquerade')));
-    $edit = array(
-      'regions[bartik]' => 'content',
-      'regions[seven]' => 'content',
-    );
-    $this->backdropPost('admin/structure/block/manage/masquerade/masquerade/configure', $edit, t('Save block'));
-    $this->assertText(t('The block configuration has been saved.'));
+    $layout = layout_load('home');
+    $layout->addBlock('masquerade', 'masquerade', 'footer');
+    $layout->save();
+
+    $layout = layout_load('admin_default');
+    $layout->addBlock('masquerade', 'masquerade', 'footer');
+    $layout->save();
+
+    layout_reset_caches();
 
     // Test switch from user profile
     $this->backdropGet("user/{$user->uid}");

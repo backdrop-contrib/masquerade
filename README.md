@@ -12,13 +12,14 @@ It adds a link on a user\'s profile page that allows permitted users to
 masquerade as that user. Upon masquerading, a link to "switch back" to the
 original user will appear in the menu. While masquerading, the option to
 masquerade as another user will not appear. All masquerading transactions
-are logged, and `$user->masquerading` will be set; this could be displayed
-via theme.
+are logged, and a session flag `$_SESSION['masquerading']` will be set,
+containing the user ID of the original account (the one that is masquerading as
+another account).
 
 In the masquerade settings a list of roles are presented; any checked role
-is considered an "administrator" and requires the second level "masquerade as admin"
-permission to masquerade as. User #1 is automatically considered an administrator,
-regardless of roles.
+is considered an "administrator" and requires the second level "masquerade as
+admin" permission to masquerade as. User #1 is automatically considered an
+administrator, regardless of roles.
 
 Installation
 ----------------------------
