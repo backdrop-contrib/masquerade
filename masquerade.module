@@ -268,7 +268,7 @@ function masquerade_admin_settings() {
 }
 
 /**
- * Validation callback
+ * Validation handler
  * @see masquerade_admin_settings()
  */
 function masquerade_admin_settings_validate($form, &$form_state) {
@@ -299,7 +299,7 @@ function masquerade_admin_settings_validate($form, &$form_state) {
 }
 
 /**
- * Submission callback
+ * Submission handler
  * @see masquerade_admin_settings()
  */
 function masquerade_admin_settings_submit($form, &$form_state) {
