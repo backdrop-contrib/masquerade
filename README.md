@@ -10,21 +10,22 @@ switch back to the previous account.
 
 It adds a link on a user\'s profile page that allows permitted users to
 masquerade as that user. Upon masquerading, a link to "switch back" to the
-original user will appear in the menu. While masquerading, the option to 
-masquerade as another user will not appear. All masquerading transactions 
-are logged, and `$user->masquerading` will be set; this could be displayed
-via theme.
+original user will appear in the menu. While masquerading, the option to
+masquerade as another user will not appear. All masquerading transactions
+are logged, and a session flag `$_SESSION['masquerading']` will be set,
+containing the user ID of the original account (the one that is masquerading as
+another account).
 
 In the masquerade settings a list of roles are presented; any checked role
-is considered an "administrator" and requires the second level "masquerade as admin"
-permission to masquerade as. User #1 is automatically considered an administrator,
-regardless of roles.
+is considered an "administrator" and requires the second level "masquerade as
+admin" permission to masquerade as. User #1 is automatically considered an
+administrator, regardless of roles.
 
 Installation
 ----------------------------
 
 To install the Masquerade module, extract the module to your modules folder.
-After enabling the module, it can be configured under 
+After enabling the module, it can be configured under
 Configuration > User accounts > Masquerade. To enable users to
 masquerade, assign the appropriate "masquerade module" permissions to the roles
 available on your site. For example:
@@ -39,7 +40,7 @@ available on your site. For example:
   in the Masquerade configuration, set 'administrator' as an
   administrator role.
 
-	 
+
 Usage / Quick Switch Menu
 ----------------------------
 
@@ -47,7 +48,7 @@ By default, when a user is selected for the 'Menu Quick Switch user', the Masque
 
  * Masquerade as 'the user selected': When clicked, the user can quick switch to the user selected.
  * Switch back: This menu item appears while masquerading so that you can switch back to your original user.
- 
+
 License
 ----------------------------
 
