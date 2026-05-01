@@ -268,7 +268,8 @@ function masquerade_admin_settings() {
 }
 
 /**
- *
+ * Validation callback
+ * @see masquerade_admin_settings()
  */
 function masquerade_admin_settings_validate($form, &$form_state) {
   $config = config('masquerade.settings');
@@ -298,7 +299,8 @@ function masquerade_admin_settings_validate($form, &$form_state) {
 }
 
 /**
- *
+ * Submission callback
+ * @see masquerade_admin_settings()
  */
 function masquerade_admin_settings_submit($form, &$form_state) {
   $config = config('masquerade.settings');
@@ -439,7 +441,6 @@ function masquerade_user_validate(&$form, $form_state) {
 
 /**
  * Implements hook_user_update().
- *
  */
 function masquerade_user_update($account) {
   if (isset($account->masquerade_users)) {
